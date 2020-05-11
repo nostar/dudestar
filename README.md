@@ -15,6 +15,8 @@ DSD: https://github.com/szechyjs/dsd
 
 MBELIB: https://github.com/szechyjs/mbelib
 
+MMDVMHost: https://github.com/F4FXL/MMDVMHost
+
 Not only is software from these projects being used directly, but learning about the various network protocols and encoding/decoding of the various protocols was only possible thanks to the authors of all of these software projects.
 
 # Optional FLite Text-to-speech build
