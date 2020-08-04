@@ -41,7 +41,7 @@ qmake may have a different name on your distribution i.e. on Fedora it's called 
 
 Notes for building/running Debian/Raspbian:  In addition to the Linux build requirements, there are some additional requirements for running this QT application in order for the audio devices to be correctly detected:
 ```
-sudo apt-get install libqt5multimedia5-plugins
+sudo apt-get install libqt5multimedia5-plugins libqt5serialport5-dev qtmultimedia5-dev libqt5multimediawidgets5 libqt5multimedia5-plugins libqt5multimedia5
 ```
 And if pulseaudio is not currently installed:
 ```
