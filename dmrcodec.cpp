@@ -46,10 +46,12 @@ extern cst_voice * register_cmu_us_rms(const char *);
 }
 #endif
 
-DMRCodec::DMRCodec(QString callsign, uint32_t dmrid, QString password, uint32_t dstid, QString host, uint32_t port, QString vocoder, QString audioin, QString audioout) :
+DMRCodec::DMRCodec(QString callsign, uint32_t dmrid, QString password, QString options, uint32_t repeaterid, uint32_t dstid, QString host, uint32_t port, QString vocoder, QString audioin, QString audioout) :
 	m_callsign(callsign),
-	m_dmrid(dmrid),
+    m_dmrid(dmrid),
 	m_password(password),
+    m_options(options),
+    m_repeaterId(repeaterid),
 	m_srcid(0),
 	m_dstid(0),
 	m_txdstid(dstid),
@@ -100,7 +102,7 @@ void DMRCodec::process_udp()
 	QByteArray out;
 	QHostAddress sender;
 	quint16 senderPort;
-	CSHA256 sha256;
+    CSHA256 sha256;
 	char buffer[400U];
 
 	buf.resize(m_udp->pendingDatagramSize());
@@ -122,7 +124,8 @@ void DMRCodec::process_udp()
 	if((m_status != CONNECTED_RW) && (::memcmp(buf.data(), "RPTACK", 6U) == 0)){
 		switch(m_status){
 		case CONNECTING:
-			m_status = DMR_AUTH;
+            m_status = DMR_AUTH;
+            qDebug() << "CONNECTING";
 			in.append(buf[6]);
 			in.append(buf[7]);
 			in.append(buf[8]);
@@ -134,39 +137,52 @@ void DMRCodec::process_udp()
 			out[0] = 'R';
 			out[1] = 'P';
 			out[2] = 'T';
-			out[3] = 'K';
-			out[4] = (m_dmrid >> 24) & 0xff;
-			out[5] = (m_dmrid >> 16) & 0xff;
-			out[6] = (m_dmrid >> 8) & 0xff;
-			out[7] = (m_dmrid >> 0) & 0xff;
+            out[3] = 'K';
+            out[4] = (m_repeaterId  >> 24) & 0xff;
+            out[5] = (m_repeaterId  >> 16) & 0xff;
+            out[6] = (m_repeaterId  >> 8) & 0xff;
+            out[7] = (m_repeaterId  >> 0) & 0xff;
 			sha256.buffer((unsigned char *)in.data(), (unsigned int)(m_password.size() + sizeof(uint32_t)), (unsigned char *)out.data() + 8U);
 			break;
-		case DMR_AUTH:
+        case DMR_AUTH:
+            qDebug() << "AUTH";
 			out.clear();
 			buffer[0] = 'R';
 			buffer[1] = 'P';
 			buffer[2] = 'T';
 			buffer[3] = 'C';
-			buffer[4] = (m_dmrid >> 24) & 0xff;
-			buffer[5] = (m_dmrid >> 16) & 0xff;
-			buffer[6] = (m_dmrid >> 8) & 0xff;
-			buffer[7] = (m_dmrid >> 0) & 0xff;
+            buffer[4] = (m_repeaterId  >> 24) & 0xff;
+            buffer[5] = (m_repeaterId  >> 16) & 0xff;
+            buffer[6] = (m_repeaterId  >> 8) & 0xff;
+            buffer[7] = (m_repeaterId  >> 0) & 0xff;
 
 			m_status = DMR_CONF;
 			char latitude[20U];
 			::sprintf(latitude, "00.00000");
-
+            fprintf(stdout, "init configuration");
 			char longitude[20U];
 			::sprintf(longitude, "00.000000");
 			::sprintf(buffer + 8U, "%-8.8s%09u%09u%02u%02u%8.8s%9.9s%03d%-20.20s%-19.19s%c%-124.124s%-40.40s%-40.40s", m_callsign.toStdString().c_str(),
-					438800000, 438800000, 1, 1, latitude, longitude, 0, "Nowhere","ABC", '4', "www.qrz.com", "20200101", "MMDVM_DVMEGA");
+                    438800000, 438800000, 1, 1, latitude, longitude, 0, "Sant Vicenç de Castellet","ABC", '4', "www.qrz.com", "20200101", "MMDVM_DVMEGA");
 			out.append(buffer, 302);
 			break;
 		case DMR_CONF:
-			m_status = CONNECTED_RW;
+            if (m_options.size() == 0) {
+                qDebug() << "DMR_CONF size 0";
+                m_status = CONNECTED_RW;
+            } else {
+                m_status = DMR_OPTS;
+                fprintf(stdout, "init send");
+                qDebug() << "init send";
+                this->send_options();
+                fprintf(stdout, "end send");
+                qDebug() << "end send";
+                break;
+            }
+            qDebug() << "DMR_CONECTED_RW";
 			m_mbedec = new MBEDecoder();
 			m_mbedec->setAutoGain(true);
-			m_mbeenc = new MBEEncoder();
+            m_mbeenc = new MBEEncoder();
 			m_mbeenc->set_dmr_mode();
 			m_mbeenc->set_gain_adjust(2.5);
 			m_txtimer = new QTimer();
@@ -190,6 +206,35 @@ void DMRCodec::process_udp()
 			m_audio = new AudioEngine(m_audioin, m_audioout);
 			m_audio->init();
 			break;
+        case DMR_OPTS:
+            fprintf(stdout, "DMR_OPTS_RW");
+            m_status = CONNECTED_RW;
+            m_mbedec = new MBEDecoder();
+            m_mbedec->setAutoGain(true);
+            m_mbeenc = new MBEEncoder();
+            m_mbeenc->set_dmr_mode();
+            m_mbeenc->set_gain_adjust(2.5);
+            m_txtimer = new QTimer();
+            connect(m_txtimer, SIGNAL(timeout()), this, SLOT(transmit()));
+            m_rxtimer = new QTimer();
+            connect(m_rxtimer, SIGNAL(timeout()), this, SLOT(process_rx_data()));
+            m_ping_timer = new QTimer();
+            connect(m_ping_timer, SIGNAL(timeout()), this, SLOT(send_ping()));
+            m_ping_timer->start(5000);
+            if(m_vocoder != ""){
+                m_hwrx = true;
+                m_hwtx = true;
+                m_ambedev = new SerialAMBE("DMR");
+                m_ambedev->connect_to_serial(m_vocoder);
+                connect(m_ambedev, SIGNAL(data_ready()), this, SLOT(get_ambe()));
+            }
+            else{
+                m_hwrx = false;
+                m_hwtx = false;
+            }
+            m_audio = new AudioEngine(m_audioin, m_audioout);
+            m_audio->init();
+            break;
 		default:
 			break;
 		}
@@ -222,6 +267,9 @@ void DMRCodec::process_udp()
 		m_gwid = (uint32_t)((buf.data()[11] << 24) | ((buf.data()[12] << 16) & 0xff0000) | ((buf.data()[13] << 8) & 0xff00) | (buf.data()[14] & 0xff));
 		m_fn = buf.data()[4];
 
+        qDebug() << "m_srcid: " << m_srcid;
+        qDebug() << "m_dstid: " << m_dstid;
+
 		if(!m_tx && (m_rxcnt++ == 0)){
 			m_rxtimer->start(19);
 		}
@@ -253,16 +301,16 @@ void DMRCodec::hostname_lookup(QHostInfo i)
 		out.append('P');
 		out.append('T');
 		out.append('L');
-		out.append((m_dmrid >> 24) & 0xff);
-		out.append((m_dmrid >> 16) & 0xff);
-		out.append((m_dmrid >> 8) & 0xff);
-		out.append((m_dmrid >> 0) & 0xff);
+        out.append((m_repeaterId  >> 24) & 0xff);
+        out.append((m_repeaterId  >> 16) & 0xff);
+        out.append((m_repeaterId  >> 8) & 0xff);
+        out.append((m_repeaterId  >> 0) & 0xff);
 		m_address = i.addresses().first();
 		m_udp = new QUdpSocket(this);
 		connect(m_udp, SIGNAL(readyRead()), this, SLOT(process_udp()));
 		m_udp->writeDatagram(out, m_address, m_port);
 #ifdef DEBUG
-		fprintf(stderr, "CONN: ");
+        fprintf(stderr, "CONN: ");
 		for(int i = 0; i < out.size(); ++i){
 			fprintf(stderr, "%02x ", (unsigned char)out.data()[i]);
 		}
@@ -283,10 +331,10 @@ void DMRCodec::send_ping()
 	QByteArray out;
 	char tag[] = { 'R','P','T','P','I','N','G' };
 	out.append(tag, 7);
-	out.append((m_dmrid >> 24) & 0xff);
-	out.append((m_dmrid >> 16) & 0xff);
-	out.append((m_dmrid >> 8) & 0xff);
-	out.append((m_dmrid >> 0) & 0xff);
+    out.append((m_repeaterId  >> 24) & 0xff);
+    out.append((m_repeaterId  >> 16) & 0xff);
+    out.append((m_repeaterId  >> 8) & 0xff);
+    out.append((m_repeaterId  >> 0) & 0xff);
 	m_udp->writeDatagram(out, m_address, m_port);
 #ifdef DEBUG
 	fprintf(stderr, "PING: ");
@@ -298,6 +346,25 @@ void DMRCodec::send_ping()
 #endif
 }
 
+void DMRCodec::send_options()
+{
+    QByteArray out;
+    char buffer[400U];
+    buffer[0] = 'R';
+    buffer[1] = 'P';
+    buffer[2] = 'T';
+    buffer[3] = 'O';
+    buffer[4] = (m_repeaterId  >> 24) & 0xff;
+    buffer[5] = (m_repeaterId  >> 16) & 0xff;
+    buffer[6] = (m_repeaterId  >> 8) & 0xff;
+    buffer[7] = (m_repeaterId  >> 0) & 0xff;
+    qDebug() << "m_repeaterId " << m_repeaterId ;
+    qDebug() << "m_options" << m_options.toStdString().c_str();
+    ::sprintf(buffer + 8U, m_options.toStdString().c_str());
+    out.append(buffer);
+    m_udp->writeDatagram(out, m_address, m_port);
+}
+
 void DMRCodec::send_disconnect()
 {
 	QByteArray out;
@@ -306,10 +373,10 @@ void DMRCodec::send_disconnect()
 	out.append('T');
 	out.append('C');
 	out.append('L');
-	out.append((m_dmrid >> 24) & 0xff);
-	out.append((m_dmrid >> 16) & 0xff);
-	out.append((m_dmrid >> 8) & 0xff);
-	out.append((m_dmrid >> 0) & 0xff);
+    out.append((m_repeaterId  >> 24) & 0xff);
+    out.append((m_repeaterId  >> 16) & 0xff);
+    out.append((m_repeaterId  >> 8) & 0xff);
+    out.append((m_repeaterId  >> 0) & 0xff);
 	m_udp->writeDatagram(out, m_address, m_port);
 #ifdef DEBUG
 	fprintf(stderr, "SEND: ");
@@ -333,7 +400,7 @@ void DMRCodec::start_tx()
 	m_rxcnt = 0;
 	m_ttscnt = 0;
 	m_transmitcnt = 0;
-	//m_srcid = m_dmrid;
+    //m_srcid = m_dmrid;
 #ifdef USE_FLITE
 
 	if(m_ttsid == 1){
@@ -424,7 +491,7 @@ void DMRCodec::send_frame()
 	else{
 		set_calltype(0);
 	}
-	if(m_tx){
+    if(m_tx){
 
 		if(!m_dmrcnt){
 			encode_header();
@@ -477,16 +544,17 @@ void DMRCodec::build_frame()
 	m_dmrFrame[2U]  = 'R';
 	m_dmrFrame[3U]  = 'D';
 
-	m_dmrFrame[5U]  = m_dmrid >> 16;
-	m_dmrFrame[6U]  = m_dmrid >> 8;
-	m_dmrFrame[7U]  = m_dmrid >> 0;
+    m_dmrFrame[5U]  = m_dmrid >> 16;
+    m_dmrFrame[6U]  = m_dmrid >> 8;
+    m_dmrFrame[7U]  = m_dmrid >> 0;
+
 	m_dmrFrame[8U]  = m_txdstid >> 16;
 	m_dmrFrame[9U]  = m_txdstid >> 8;
 	m_dmrFrame[10U] = m_txdstid >> 0;
-	m_dmrFrame[11U]  = m_dmrid >> 24;
-	m_dmrFrame[12U]  = m_dmrid >> 16;
-	m_dmrFrame[13U]  = m_dmrid >> 8;
-	m_dmrFrame[14U]  = m_dmrid >> 0;
+    m_dmrFrame[11U]  = m_repeaterId  >> 24;
+    m_dmrFrame[12U]  = m_repeaterId  >> 16;
+    m_dmrFrame[13U]  = m_repeaterId  >> 8;
+    m_dmrFrame[14U]  = m_repeaterId  >> 0;
 
 	m_dmrFrame[15U] = (m_slot == 1U) ? 0x00U : 0x80U;
 	m_dmrFrame[15U] |= (m_flco == FLCO_GROUP) ? 0x00U : 0x40U;
@@ -719,9 +787,9 @@ void DMRCodec::lc_get_data(uint8_t *bytes)
 	bytes[3U] = m_txdstid >> 16;
 	bytes[4U] = m_txdstid >> 8;
 	bytes[5U] = m_txdstid >> 0;
-	bytes[6U] = m_dmrid >> 16;
-	bytes[7U] = m_dmrid >> 8;
-	bytes[8U] = m_dmrid >> 0;
+    bytes[6U] = m_repeaterId  >> 16;
+    bytes[7U] = m_repeaterId  >> 8;
+    bytes[8U] = m_repeaterId  >> 0;
 }
 
 void DMRCodec::full_lc_encode(uint8_t* data, uint8_t type)

@@ -129,7 +129,7 @@ void DudeStar::init_gui()
 	palette.setColor(QPalette::Highlight, QColor(42, 130, 218));
 	palette.setColor(QPalette::HighlightedText, Qt::black);
 	qApp->setPalette(palette);
-	status_txt = new QLabel("Not connected");
+    status_txt = new QLabel("No connectat");
 	tts_voices = new QButtonGroup();
 	tts_voices->addButton(ui->checkBoxTTSOff, 0);
 	tts_voices->addButton(ui->checkBoxKal, 1);
@@ -203,9 +203,9 @@ void DudeStar::init_gui()
 	ui->dmrtgEdit->setEnabled(false);
 
 	discover_vocoders();
-	ui->AudioOutCombo->addItem("OS Default");
+    ui->AudioOutCombo->addItem("Per defecte");
 	ui->AudioOutCombo->addItems(AudioEngine::discover_audio_devices(AUDIO_OUT));
-	ui->AudioInCombo->addItem("OS Default");
+    ui->AudioInCombo->addItem("Per defecte");
 	ui->AudioInCombo->addItems(AudioEngine::discover_audio_devices(AUDIO_IN));
 }
 
@@ -1144,7 +1144,7 @@ void DudeStar::discover_vocoders()
 {
 	QMap<QString, QString> l = SerialAMBE::discover_devices();
 	QMap<QString, QString>::const_iterator i = l.constBegin();
-	ui->AmbeCombo->addItem("Software vocoder", "");
+    ui->AmbeCombo->addItem("Programari vocoder", "");
 	while (i != l.constEnd()) {
 		ui->AmbeCombo->addItem(i.value(), i.key());
 		++i;
@@ -1158,7 +1158,7 @@ void DudeStar::process_connect()
 		connect_status = DISCONNECTED;
 		m_modethread->quit();
 		//delete m_modethread;
-        ui->connectButton->setText("Connect");
+        ui->connectButton->setText("Connecta");
         ui->mycall->clear();
         ui->urcall->clear();
         ui->rptr1->clear();
@@ -1175,7 +1175,7 @@ void DudeStar::process_connect()
         ui->callsignEdit->setEnabled(true);
 		ui->dmridEdit->setEnabled(true);
 		ui->txButton->setDisabled(true);
-		status_txt->setText("Not connected");
+        status_txt->setText("No connectat");
 
 		if((protocol == "DCS") || (protocol == "XRF") || (protocol == "M17")){
 			ui->comboMod->setEnabled(true);
@@ -1184,9 +1184,9 @@ void DudeStar::process_connect()
     else{
 		QStringList sl = ui->hostCombo->currentData().toString().simplified().split(':');
 		connect_status = CONNECTING;
-		status_txt->setText("Connecting...");
+        status_txt->setText("Connectant...");
 		//ui->connectButton->setEnabled(false);
-		ui->connectButton->setText("Connecting");
+        ui->connectButton->setText("Connectant");
 		host = sl.at(0).simplified();
 		port = sl.at(1).toInt();
 		callsign = ui->callsignEdit->text().toUpper();
@@ -1300,7 +1300,12 @@ void DudeStar::process_connect()
 			dmrid = ui->dmridEdit->text().toUInt();
 			dmr_password = (ui->dmrpwEdit->text().isEmpty()) ? sl.at(2).simplified() : ui->dmrpwEdit->text();
 			dmr_destid = ui->dmrtgEdit->text().toUInt();
-			m_dmr = new DMRCodec(callsign, dmrid, dmr_password, dmr_destid, host, port, ui->AmbeCombo->currentData().toString().simplified(), ui->AudioInCombo->currentText(), ui->AudioOutCombo->currentText());
+            dmr_options = ui->dmrOptions->text();
+            dmr_repeater = ui->dmrRepeaterId->text();
+            QString aux_repeater = "";
+            aux_repeater.append(ui->dmridEdit->text());
+            aux_repeater.append(dmr_repeater);
+            m_dmr = new DMRCodec(callsign, dmrid, dmr_password, dmr_options, aux_repeater.toUInt(), dmr_destid, host, port, ui->AmbeCombo->currentData().toString().simplified(), ui->AudioInCombo->currentText(), ui->AudioOutCombo->currentText());
 			m_modethread = new QThread;
 			m_dmr->moveToThread(m_modethread);
 			connect(m_dmr, SIGNAL(update()), this, SLOT(update_dmr_data()));
@@ -1441,7 +1446,7 @@ void DudeStar::update_m17_data()
 	}
 	if( (connect_status == CONNECTING) && ( m_m17->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1477,7 +1482,7 @@ void DudeStar::update_ysf_data()
 	}
 	if( (connect_status == CONNECTING) && ( m_ysf->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1531,7 +1536,7 @@ void DudeStar::update_nxdn_data()
 	}
 	if( (connect_status == CONNECTING) && ( m_nxdn->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1571,7 +1576,7 @@ void DudeStar::update_p25_data()
 	}
 	if( (connect_status == CONNECTING) && ( m_p25->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1613,7 +1618,7 @@ void DudeStar::update_dmr_data()
 	}
 	if((connect_status == CONNECTING) && (m_dmr->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1655,7 +1660,7 @@ void DudeStar::update_ref_data()
 	}
 	if((connect_status == CONNECTING) && (m_ref->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1693,7 +1698,7 @@ void DudeStar::update_dcs_data()
 	}
 	if((connect_status == CONNECTING) && (m_dcs->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);
@@ -1731,7 +1736,7 @@ void DudeStar::update_xrf_data()
 	}
 	if((connect_status == CONNECTING) && (m_xrf->get_status() == CONNECTED_RW)){
 		connect_status = CONNECTED_RW;
-		ui->connectButton->setText("Disconnect");
+        ui->connectButton->setText("Desconnectar");
 		ui->connectButton->setEnabled(true);
 		ui->AmbeCombo->setEnabled(false);
 		ui->AudioOutCombo->setEnabled(false);

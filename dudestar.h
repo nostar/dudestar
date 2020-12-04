@@ -82,6 +82,8 @@ private:
     QString callsign;
 	//QString serial;
 	QString dmr_password;
+    QString dmr_options;
+    QString dmr_repeater;
 	QString saved_refhost;
 	QString saved_dcshost;
 	QString saved_xrfhost;
