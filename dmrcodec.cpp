@@ -125,7 +125,6 @@ void DMRCodec::process_udp()
 		switch(m_status){
 		case CONNECTING:
             m_status = DMR_AUTH;
-            qDebug() << "CONNECTING";
 			in.append(buf[6]);
 			in.append(buf[7]);
 			in.append(buf[8]);
@@ -159,30 +158,25 @@ void DMRCodec::process_udp()
 			m_status = DMR_CONF;
 			char latitude[20U];
 			::sprintf(latitude, "00.00000");
-            fprintf(stdout, "init configuration");
+
 			char longitude[20U];
 			::sprintf(longitude, "00.000000");
 			::sprintf(buffer + 8U, "%-8.8s%09u%09u%02u%02u%8.8s%9.9s%03d%-20.20s%-19.19s%c%-124.124s%-40.40s%-40.40s", m_callsign.toStdString().c_str(),
-                    438800000, 438800000, 1, 1, latitude, longitude, 0, "Sant Vicenç de Castellet","ABC", '4', "www.qrz.com", "20200101", "MMDVM_DVMEGA");
+					438800000, 438800000, 1, 1, latitude, longitude, 0, "Nowhere","ABC", '4', "www.qrz.com", "20200101", "MMDVM_DVMEGA");
 			out.append(buffer, 302);
 			break;
 		case DMR_CONF:
             if (m_options.size() == 0) {
-                qDebug() << "DMR_CONF size 0";
                 m_status = CONNECTED_RW;
             } else {
                 m_status = DMR_OPTS;
-                fprintf(stdout, "init send");
-                qDebug() << "init send";
                 this->send_options();
-                fprintf(stdout, "end send");
-                qDebug() << "end send";
                 break;
             }
             qDebug() << "DMR_CONECTED_RW";
 			m_mbedec = new MBEDecoder();
 			m_mbedec->setAutoGain(true);
-            m_mbeenc = new MBEEncoder();
+			m_mbeenc = new MBEEncoder();
 			m_mbeenc->set_dmr_mode();
 			m_mbeenc->set_gain_adjust(2.5);
 			m_txtimer = new QTimer();
@@ -267,9 +261,6 @@ void DMRCodec::process_udp()
 		m_gwid = (uint32_t)((buf.data()[11] << 24) | ((buf.data()[12] << 16) & 0xff0000) | ((buf.data()[13] << 8) & 0xff00) | (buf.data()[14] & 0xff));
 		m_fn = buf.data()[4];
 
-        qDebug() << "m_srcid: " << m_srcid;
-        qDebug() << "m_dstid: " << m_dstid;
-
 		if(!m_tx && (m_rxcnt++ == 0)){
 			m_rxtimer->start(19);
 		}
@@ -310,7 +301,7 @@ void DMRCodec::hostname_lookup(QHostInfo i)
 		connect(m_udp, SIGNAL(readyRead()), this, SLOT(process_udp()));
 		m_udp->writeDatagram(out, m_address, m_port);
 #ifdef DEBUG
-        fprintf(stderr, "CONN: ");
+		fprintf(stderr, "CONN: ");
 		for(int i = 0; i < out.size(); ++i){
 			fprintf(stderr, "%02x ", (unsigned char)out.data()[i]);
 		}
@@ -400,7 +391,7 @@ void DMRCodec::start_tx()
 	m_rxcnt = 0;
 	m_ttscnt = 0;
 	m_transmitcnt = 0;
-    //m_srcid = m_dmrid;
+	//m_srcid = m_dmrid;
 #ifdef USE_FLITE
 
 	if(m_ttsid == 1){
@@ -491,7 +482,7 @@ void DMRCodec::send_frame()
 	else{
 		set_calltype(0);
 	}
-    if(m_tx){
+	if(m_tx){
 
 		if(!m_dmrcnt){
 			encode_header();

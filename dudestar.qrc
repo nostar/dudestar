@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
         <file>images/dstar.png</file>
-        <file>images/descarga.png</file>
     </qresource>
 </RCC>
