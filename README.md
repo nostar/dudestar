@@ -38,6 +38,7 @@ And if pulseaudio is not currently installed:
 ```
 sudo apt-get install pulseaudio
 ```
+And finally mbelib from https://github.com/szechyjs/mbelib
 
 # Builds
 A 32 bit Windows executable is available from the releases section.  This is a statically linked, stand-alone executable. It does not need to be installed.  Just run it and go.
