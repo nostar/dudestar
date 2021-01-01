@@ -19,7 +19,7 @@ Host/Mod: Select the desired host and module (for D-STAR and M17) from the selec
 Callsign:  Enter your amateur radio callsign.  A valid license is required to use this software.  
 
 DMRID: A valid DMR ID is required to connect to DMR servers.
-Latitude/Logitude/Location/Description:  These are DMR config options, sent to the DMR server during connect.   Some servers require specific values here, some do not.  This is specific to the server you are connecting to, so please dont ask what these values should be.
+Latitude/Longitude/Location/Description:  These are DMR config options, sent to the DMR server during connect.   Some servers require specific values here, some do not.  This is specific to the server you are connecting to, so please dont ask what these values should be.
 
 DMR+ IPSC2 hosts:  The format for the DMR+ options string is the complete string including 'Options='.  Create your options string and check 'Send DMR+ options on connect' before connecting.  A description of the DMR+ options string can be found here: https://github.com/g4klx/MMDVMHost/blob/master/DMRplus_startup_options.md .
 
