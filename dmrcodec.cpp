@@ -148,7 +148,7 @@ void DMRCodec::process_udp()
 			}
 
 			::sprintf(buffer + 8U, "%-8.8s%09u%09u%02u%02u%8.8s%9.9s%03d%-20.20s%-19.19s%c%-124.124s%-40.40s%-40.40s", m_modeinfo.callsign.toStdString().c_str(),
-					438800000, 438800000, 1, 1, latitude, longitude, 0, m_location.toStdString().c_str(), m_desc.toStdString().c_str(), '4', "www.qrz.com", "20200101", "MMDVM_DVMEGA");
+					433900000, 433900000, 1, 1, latitude, longitude, 0, m_location.toStdString().c_str(), m_desc.toStdString().c_str(), '4', "www.qrz.com", "20200101", "DUDESTAR");
 			out.append(buffer, 302);
 			break;
 		case DMR_CONF:
