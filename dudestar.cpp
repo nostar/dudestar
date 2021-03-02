@@ -1342,7 +1342,7 @@ void DudeStar::process_settings()
 	ui->editDesc->setText(m_settings->value("DMRDESC", "DudeStar").toString().simplified());
 	ui->editFreq->setText(m_settings->value("DMRFREQ", "438800000").toString().simplified());
 	ui->editURL->setText(m_settings->value("DMRURL", "www.qrz.com").toString().simplified());
-	ui->editSWID->setText(m_settings->value("DMRSWID", "20210131_Pi-Star_v4").toString().simplified());
+	ui->editSWID->setText(m_settings->value("DMRSWID", "20210131").toString().simplified());
 	ui->editPKID->setText(m_settings->value("DMRPKID", "MMDVM_DMO").toString().simplified());
 	ui->editDMROptions->setText(m_settings->value("DMROPTS").toString().simplified());
 	ui->editMYCALL->setText(m_settings->value("MYCALL").toString().simplified());
