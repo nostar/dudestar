@@ -3,7 +3,7 @@ QT       += core gui network serialport multimedia
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 macx:LIBS += -framework AVFoundation
-macx: QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.14
+macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.14
 macx:QMAKE_INFO_PLIST = Info.plist
 
 TARGET = dudestar
