@@ -170,6 +170,7 @@ contains(DEFINES, USE_FLITE){
 	LIBS += -lflite_cmu_us_slt -lflite_cmu_us_kal16 -lflite_cmu_us_awb -lflite_cmu_us_rms -lflite_usenglish -lflite_cmulex -lflite -lasound
 }
 RC_ICONS = images/dudestar.ico
+ICON = images/DudeStar.icns
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
